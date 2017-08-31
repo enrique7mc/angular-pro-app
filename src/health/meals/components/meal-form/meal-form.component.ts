@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
+import { ChangeDetectionStrategy, Component, EventEmitter, Output } from '@angular/core';
+import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+
+import { Meal } from '../../../shared/services/meals/meals.service';
 
 @Component({
 	selector: 'meal-form',
@@ -15,6 +17,9 @@ import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@ang
 								type="text" 
 								placeholder="e.g. English Breakfast"
 								formControlName="name">
+						<div class="error" *ngIf="required">
+							Meal name is required
+						</div>
 					</label>
 				</div>
 
@@ -23,10 +28,19 @@ import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@ang
 						<h3>Food</h3>
 						<button
 								type="button"
-								class="meal-form__add">
+								class="meal-form__add"
+								(click)="addIngredient()">
 							<img src="/img/add-white.svg" alt="add food">
 							Add food
 						</button>
+					</div>
+					<div formArrayName="ingredients">
+						<label *ngFor="let c of ingredients.controls; index as i;">
+							<input [formControlName]="i" placeholder="e.g. Eggs">
+							<span class="meal-form__remove"
+									(click)="removeIngredient(i)">
+							</span>
+						</label>
 					</div>
 				</div>
 
@@ -49,6 +63,10 @@ import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@ang
 	`
 })
 export class MealFormComponent {
+
+	@Output()
+	create = new EventEmitter<Meal>();
+
 	form = this.fb.group({
 		name: ['', Validators.required],
 		ingredients: this.fb.array([''])
@@ -58,7 +76,26 @@ export class MealFormComponent {
 		private fb: FormBuilder
 	) {}
 
+	get required() {
+		const name = this.form.get('name');
+		return name.hasError('required') && name.touched;
+	}
+
+	get ingredients() {
+		return this.form.get('ingredients') as FormArray;
+	}
+
+	addIngredient() {
+		this.ingredients.push(new FormControl(''));
+	}
+
+	removeIngredient(index: number) {
+		this.ingredients.removeAt(index);
+	}
+
 	createMeal() {
-		console.log(this.form.value);
+		if (this.form.valid) {
+			this.create.emit(this.form.value);
+		}
 	}
 }
